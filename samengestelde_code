@@ -1,0 +1,190 @@
+import RPi.GPIO as GPIO
+import time
+
+# --- Ultrasonic sensor pins ---
+TRIG = 19
+ECHO = 18
+BUTTON = 21
+
+# --- ADC pins voor gewichtssensor ---
+CLK  = 24  
+MISO = 23  
+MOSI = 25  
+CS   = 12
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+
+# Ultrasonic sensor setup
+GPIO.setup(TRIG, GPIO.OUT)
+GPIO.setup(ECHO, GPIO.IN)
+GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# ADC setup
+GPIO.setup(CLK, GPIO.OUT)
+GPIO.setup(MOSI, GPIO.OUT)
+GPIO.setup(MISO, GPIO.IN)
+GPIO.setup(CS, GPIO.OUT)
+
+GPIO.output(CS, True)
+GPIO.output(CLK, False)
+
+
+stop_programma = False
+
+# --- Functies Ultrasonic sensor ---
+def cleanup_gpio():
+    print("\nGPIO wordt opgeruimd...")
+    GPIO.cleanup()
+    print("GPIO is opgeruimd.")
+
+def meet_afstand():
+    GPIO.output(TRIG, False)
+    time.sleep(0.05)
+    GPIO.output(TRIG, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG, False)
+
+    timeout = time.perf_counter() + 0.04
+    while GPIO.input(ECHO) == 0:
+        if time.perf_counter() > timeout:
+            return None
+    start = time.perf_counter()
+
+    timeout = time.perf_counter() + 0.04
+    while GPIO.input(ECHO) == 1:
+        if time.perf_counter() > timeout:
+            return None
+    end = time.perf_counter()
+
+    duur = end - start
+    afstand = (duur * 34300) / 2
+    return afstand
+
+def wacht_op_knop(timeout=2):
+    global stop_programma
+    print(f"Wachten op knopdruk (max {timeout} seconden)...")
+    start = time.perf_counter()
+
+    while True:
+        knop = GPIO.input(BUTTON)
+
+        if knop == 0:
+            print("Knop ingedrukt, doorgaan met schenken.")
+
+            while GPIO.input(BUTTON) == 0:
+                if time.perf_counter() - start > timeout:
+                    print("Timeout bij loslaten knop, programma wordt beëindigd.")
+                    stop_programma = True
+                    return False
+                time.sleep(0.01)
+
+            return True
+
+        if time.perf_counter() - start > timeout:
+            print("Timeout verstreken zonder knopdruk, programma wordt beëindigd.")
+            stop_programma = True
+            return False
+
+        time.sleep(0.01)
+
+# --- Functies ADC gewichtssensor ---
+def read_adc(channel):
+    if channel < 0 or channel > 7:
+        return -1
+
+    GPIO.output(CS, False)
+
+    command = 0x18 | channel
+    for i in range(5):
+        GPIO.output(MOSI, (command & 0x10) != 0)
+        command <<= 1
+        GPIO.output(CLK, True)
+        GPIO.output(CLK, False)
+
+    GPIO.output(CLK, True)
+    GPIO.output(CLK, False)
+
+    result = 0
+    for i in range(10):
+        GPIO.output(CLK, True)
+        result <<= 1
+        if GPIO.input(MISO):
+            result |= 1
+        GPIO.output(CLK, False)
+
+    GPIO.output(CS, True)
+    return result
+
+def read_average(channel, samples=60):
+    total = 0
+    for _ in range(samples):
+        reading = read_adc(channel)
+        if reading != -1:
+            total += reading
+        time.sleep(0.005)
+    return total / samples
+
+def adc_to_voltage(adc_value):
+    return (adc_value / 1023.0) * 3.3
+
+def voltage_to_resistance(voltage, r_fixed=10000):
+    if voltage <= 0.001:
+        return 999999
+    return r_fixed * (3.3 - voltage) / voltage
+
+def resistance_to_force_max_sensitive(resistance):
+    if resistance >= 15000:
+        return 0
+    elif resistance >= 14000:
+        return 100 * (15000 - resistance) / 1000
+    elif resistance >= 12000:
+        return 200 + 300 * (14000 - resistance) / 2000
+    elif resistance >= 8000:
+        return 500 + 1000 * (12000 - resistance) / 4000
+    elif resistance >= 4000:
+        return 1500 + 2500 * (8000 - resistance) / 4000
+    else:
+        return 4000 + 4000 * max(0, (4000 - resistance)) / 4000
+
+
+zero_offset = 0
+scale_factor = 30.0
+
+print("Start programma: Ultrasonic afstand & Gewichtssensor")
+print("Druk Ctrl+C om te stoppen\n")
+
+try:
+    while True:
+        if stop_programma:
+            break
+        
+        # Ultrasonic sensor uitlezen
+        afstand = meet_afstand()
+        if afstand is not None and 2 <= afstand <= 400:
+            print(f"Afstand: {afstand:.1f} cm")
+            if afstand <= 5:
+                print("Beweging gedetecteerd binnen 5 cm - pauzeer en wacht op knop.")
+                wacht_op_knop(timeout=5)
+                if stop_programma:
+                    break
+        else:
+            print("Meting ongeldig of buiten bereik")
+
+        # Gewichtssensor uitlezen
+        adc_value = read_average(0, samples=60)
+        voltage = adc_to_voltage(adc_value)
+        resistance = voltage_to_resistance(voltage)
+
+        weight = resistance_to_force_max_sensitive(resistance)
+        weight = max(0, (weight - zero_offset) * scale_factor)
+
+        print(f"Gewicht: {int(weight)} g\n")
+
+        time.sleep(0.3)
+
+except KeyboardInterrupt:
+    print("\nGestopt door gebruiker.")
+finally:
+    cleanup_gpio()
+    print("Programma beëindigd.")

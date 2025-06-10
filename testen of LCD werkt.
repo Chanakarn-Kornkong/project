@@ -1,0 +1,24 @@
+testen of LCD werkt
+
+import RPi.GPIO as GPIO
+import time
+
+pins = [26, 13, 6, 5, 22, 27]  # je LCD-pinnen
+
+GPIO.setmode(GPIO.BCM)
+for pin in pins:
+    GPIO.setup(pin, GPIO.OUT)
+
+try:
+    while True:
+        for pin in pins:
+            GPIO.output(pin, True)
+            print(f"Pin {pin} HIGH")
+            time.sleep(0.5)
+            GPIO.output(pin, False)
+            print(f"Pin {pin} LOW")
+            time.sleep(0.5)
+except KeyboardInterrupt:
+    pass
+finally:
+    GPIO.cleanup()
