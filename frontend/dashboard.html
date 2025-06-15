@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GlasGo! Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="website.css" />
+</head>
+
+<body>
+<header class="c-header">
+    <div class="c-header__left">
+        <img src="web_icon/menu.svg" alt="Menu" class="burger-icon" id="burger-toggle" />
+    </div>
+
+    <div class="c-header__center">
+        <h1 class="c-header__title">Dashboard</h1>
+    </div>
+</header>
+
+<nav id="side-menu" class="side-menu">
+    <button id="close-menu" class="close-button">&times;</button>
+    <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="historiek.html">Historiek</a></li>
+        <li><a href="#">Profiel</a></li>
+        <li><a href="login.html">Login</a></li>
+    </ul>
+</nav>
+
+<div id="menu-overlay" class="menu-overlay"></div>
+
+<div class="Welkom_User">
+    <div class="c-daily__info">
+                <h2 class="c-daily__title">Welkom Ridoc</h2>
+            </div></div>
+
+    <div class="container">
+        <section class="c-daily">
+            <div class="c-daily__info">
+                <h2 class="c-daily__title">GlasGo! Status: Aan of uit</h2>
+            </div>
+            <button id="statusButton" class="circle off"></button>
+        </section>
+    </div>
+
+    
+    <div class="second_header">
+        <h2 class="second_title">Check je stats!</h2>
+    </div>
+
+
+<div class="four-boxes-container">
+    <div class="box">
+        <div class="top-text">Totaal</div>
+        <div class="bottom-text bottom-text-totaal" >5l</div>
+    </div>
+    <div class="box">
+        <div class="top-text">Reeks</div>
+        <div class="bottom-text bottom-text-streak">8 dagen</div>
+    </div>
+    <div class="box">
+        <div class="top-text">Temperatuur Omgeving</div>
+        <div class="bottom-text bottom-text-favoriet-drank">22graden</div>
+    </div>
+    <div class="box">
+        <div class="top-text">Vochtigheid</div>
+        <div class="bottom-text bottom-text-goal">20 %</div>
+    </div>
+</div>
+
+<div class="two-box-container">
+    <div class="second_box">
+        <div class="top-text">Gewicht van glas</div>
+        <div class="bottom-text bottom-text-gewicht-glas">200gram</div>
+    </div>
+    <div class="second_box">
+        <div class="top-text">Aantal keer gebruikt</div>
+        <div class="bottom-text bottom-text-aantal-keer-gebruikt">5 keer</div>
+    </div>
+</div>
+
+<div class="button_container">
+<a href="historiek.html" class="button_historiek">Bekijk historiek</a>
+</div>
+
+    <script src="script.js"></script>
+    
+</body>
+
+
+</html>

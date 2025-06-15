@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GlasGo! Historiek</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="website.css" />
+</head>
+
+<body>
+<header class="c-header">
+    <div class="c-header__left">
+        <img src="web_icon/menu.svg" alt="Menu" class="burger-icon" id="burger-toggle" />
+    </div>
+    <div class="c-header__center">
+        <h1 class="c-header__title">Historiek</h1>
+    </div>
+</header>
+
+<nav id="side-menu" class="side-menu">
+    <button id="close-menu" class="close-button">&times;</button>
+    <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="historiek.html">Historiek</a></li>
+        <li><a href="#">Profiel</a></li>
+        <li><a href="login.html">Login</a></li>
+    </ul>
+</nav>
+
+<div id="menu-overlay" class="menu-overlay"></div>
+
+
+<div class="container-c-historiek">
+        <section class="c-historiek">
+            <div class="c-historiek__info"></div>
+        </section>
+    </div>
+
+    <div class="container-data-historiek">
+        <section class="c-data-historiek">
+            <div class="data-info-dag">Totaal l per dag</div>
+            <div class="data-info-week">Totaal l per week</div>
+            <div class="data-info-cola">Totaal l Cola</div>
+            <div class="data-info-water">Totaal l Water</div>
+        </section>
+</div>
+
+<script src="script.js"></script>
+<!-- <div class="container-presentatiebord">
+    <section class="presentatiebord">
+            </div>
+        </div> -->
+<!-- 
+            <div class="presentatiebord__blokken"> -->
+                <!-- <div class="presentatiebord__maand_januari">
+                    <h3>Januari</h3>
+                </div>
+                <div class="presentatiebord__Meest_Gedronken_januari">
+                    <h3>Cola</h3>
+                </div>
+                <div class="presentatiebord__Totaal_januari">
+                    <h3>20l</h3>
+                </div>
+            </div>
+
+                <div class="presentatiebord__blokken"> <!--februari-->
+                <!-- <div class="presentatiebord__maand_januari">
+                    <h3>Februari</h3>
+                </div>
+                <div class="presentatiebord__Meest_Gedronken_januari">
+                    <h3>Cola</h3>
+                </div>
+                <div class="presentatiebord__Totaal_januari">
+                    <h3>25l</h3>
+                </div>
+            </div> --> 
+
+                <!-- <div class="presentatiebord__blokken"> 
+                <div class="presentatiebord__maand_januari">
+                    <h3>Maart</h3>
+                </div>
+                <div class="presentatiebord__Meest_Gedronken_januari">
+                    <h3>Cola</h3>
+                </div>
+                <div class="presentatiebord__Totaal_januari">
+                    <h3>20l</h3>
+                </div>
+            </div> -->
+
+                <!-- <div class="presentatiebord__blokken"> 
+                <div class="presentatiebord__maand_januari">
+                    <h3>april</h3>
+                </div>
+                <div class="presentatiebord__Meest_Gedronken_januari">
+                    <h3>Cola</h3>
+                </div>
+                <div class="presentatiebord__Totaal_januari">
+                    <h3>20l</h3>
+                </div>
+            </div>
+
+    </section>
+</div>  -->
+
+
+</body>
+</html>

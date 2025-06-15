@@ -79,7 +79,7 @@ try:
     ip = get_ip_address(INTERFACE_NAME)
 
     lcd_send_byte(0x80, False)      
-    lcd_message("Ip a")             
+    lcd_message("IP")             
     lcd_send_byte(0xC0, False)      
     lcd_message(ip)                 
 

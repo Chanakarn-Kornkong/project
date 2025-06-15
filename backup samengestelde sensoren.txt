@@ -1,0 +1,421 @@
+import RPi.GPIO as GPIO
+import time
+import socket
+import fcntl
+import struct
+
+# --- Buttons voor cola of water ---
+BUTTON_Cola = 16
+BUTTON_Water = 20
+
+# --- Ultrasonic sensor pins ---
+TRIG = 19
+ECHO = 18
+BUTTON = 21
+
+# --- ADC pins voor gewichtssensor ---
+CLK  = 24  
+MISO = 23  
+MOSI = 25  
+CS   = 12
+
+# --- DHT11 temperatuur sensor pin ---
+DATA_PIN = 17
+
+# --- LCD scherm pins ---
+LCD_RS = 26
+LCD_E  = 13
+LCD_D4 = 6
+LCD_D5 = 5
+LCD_D6 = 22
+LCD_D7 = 27
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+# Ultrasonic sensor setup
+GPIO.setup(TRIG, GPIO.OUT)
+GPIO.setup(ECHO, GPIO.IN)
+GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# ADC setup
+GPIO.setup(CLK, GPIO.OUT)
+GPIO.setup(MOSI, GPIO.OUT)
+GPIO.setup(MISO, GPIO.IN)
+GPIO.setup(CS, GPIO.OUT)
+
+# LCD setup (gebaseerd op je werkende code)
+for pin in [LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7]:
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, False)
+
+GPIO.output(CS, True)
+GPIO.output(CLK, False)
+
+stop_programma = False
+
+# --- LCD Functies (gebaseerd op je werkende implementatie) ---
+def lcd_toggle_enable():
+    time.sleep(0.0005)
+    GPIO.output(LCD_E, True)
+    time.sleep(0.0005)
+    GPIO.output(LCD_E, False)
+    time.sleep(0.0005)
+
+def lcd_send_nibble(data):
+    GPIO.output(LCD_D4, data & 0x01)
+    GPIO.output(LCD_D5, data & 0x02)
+    GPIO.output(LCD_D6, data & 0x04)
+    GPIO.output(LCD_D7, data & 0x08)
+    lcd_toggle_enable()
+
+def lcd_send_byte(data, mode):
+    GPIO.output(LCD_RS, mode)
+    lcd_send_nibble(data >> 4)
+    lcd_send_nibble(data & 0x0F)
+    time.sleep(0.001)
+
+def lcd_init():
+    time.sleep(0.02)
+    lcd_send_nibble(0x03)
+    time.sleep(0.005)
+    lcd_send_nibble(0x03)
+    time.sleep(0.005)
+    lcd_send_nibble(0x03)
+    time.sleep(0.005)
+    lcd_send_nibble(0x02)
+
+    lcd_send_byte(0x28, False)  # 4-bit mode, 2 lines
+    lcd_send_byte(0x0C, False)  # Display on, cursor off
+    lcd_send_byte(0x06, False)  # Entry mode
+    lcd_send_byte(0x01, False)  # Clear display
+    time.sleep(0.005)
+
+def lcd_clear():
+    lcd_send_byte(0x01, False)
+    time.sleep(0.005)
+
+def lcd_set_cursor(col, row):
+    if row == 0:
+        lcd_send_byte(0x80 + col, False)
+    elif row == 1:
+        lcd_send_byte(0xC0 + col, False)
+
+def lcd_message(text):
+    for char in text:
+        lcd_send_byte(ord(char), True)
+
+def lcd_display_two_lines(line1, line2):
+    lcd_clear()
+    lcd_set_cursor(0, 0)
+    lcd_message(line1[:16])  # Max 16 karakters per lijn
+    lcd_set_cursor(0, 1)
+    lcd_message(line2[:16])
+
+# --- IP adres functie (verbeterde versie) ---
+def get_ip_address():
+    try:
+        # Probeer eerst eth0 (ethernet)
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ip = fcntl.ioctl(
+                s.fileno(),
+                0x8915,
+                struct.pack('256s', b'eth0')
+            )[20:24]
+            s.close()
+            return socket.inet_ntoa(ip)
+        except:
+            pass
+        
+        # Probeer wlan0 (wifi)
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ip = fcntl.ioctl(
+                s.fileno(),
+                0x8915,
+                struct.pack('256s', b'wlan0')
+            )[20:24]
+            s.close()
+            return socket.inet_ntoa(ip)
+        except:
+            pass
+            
+        # Fallback methode
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "Geen IP"
+
+# --- Ultrasonic sensor functies ---
+def cleanup_gpio():
+    print("\nGPIO wordt opgeruimd...")
+    GPIO.cleanup()
+    print("GPIO is opgeruimd.")
+
+def meet_afstand():
+    GPIO.output(TRIG, False)
+    time.sleep(0.05)
+    GPIO.output(TRIG, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG, False)
+
+    timeout = time.perf_counter() + 0.04
+    while GPIO.input(ECHO) == 0:
+        if time.perf_counter() > timeout:
+            return None
+    start = time.perf_counter()
+
+    timeout = time.perf_counter() + 0.04
+    while GPIO.input(ECHO) == 1:
+        if time.perf_counter() > timeout:
+            return None
+    end = time.perf_counter()
+
+    duur = end - start
+    afstand = (duur * 34300) / 2
+    return afstand
+
+def wacht_op_knop(timeout=2):
+    """Wacht op knopdruk maar stopt NIET het hele programma bij timeout"""
+    print(f"Wachten op knopdruk (max {timeout} seconden)...")
+    start = time.perf_counter()
+
+    while True:
+        knop = GPIO.input(BUTTON)
+
+        if knop == 0:  # Knop ingedrukt
+            print("Knop ingedrukt, doorgaan met schenken.")
+            
+            # Wacht tot knop wordt losgelaten (met timeout)
+            release_start = time.perf_counter()
+            while GPIO.input(BUTTON) == 0:
+                if time.perf_counter() - release_start > 3:  # Max 3 seconden wachten op loslaten
+                    print("Knop te lang ingedrukt, ga verder...")
+                    break
+                time.sleep(0.01)
+            
+            return True
+
+        if time.perf_counter() - start > timeout:
+            print("Timeout verstreken zonder knopdruk, ga verder met normale werking...")
+            return False  # Geen knopdruk, maar ga wel verder met programma
+
+        time.sleep(0.01)
+
+# --- ADC gewichtssensor functies ---
+def read_adc(channel):
+    if channel < 0 or channel > 7:
+        return -1
+
+    GPIO.output(CS, False)
+
+    command = 0x18 | channel
+    for i in range(5):
+        GPIO.output(MOSI, (command & 0x10) != 0)
+        command <<= 1
+        GPIO.output(CLK, True)
+        GPIO.output(CLK, False)
+
+    GPIO.output(CLK, True)
+    GPIO.output(CLK, False)
+
+    result = 0
+    for i in range(10):
+        GPIO.output(CLK, True)
+        result <<= 1
+        if GPIO.input(MISO):
+            result |= 1
+        GPIO.output(CLK, False)
+
+    GPIO.output(CS, True)
+    return result
+
+def read_average(channel, samples=60):
+    total = 0
+    for _ in range(samples):
+        reading = read_adc(channel)
+        if reading != -1:
+            total += reading
+        time.sleep(0.005)
+    return total / samples
+
+def adc_to_voltage(adc_value):
+    return (adc_value / 1023.0) * 3.3
+
+def voltage_to_resistance(voltage, r_fixed=10000):
+    if voltage <= 0.001:
+        return 999999
+    return r_fixed * (3.3 - voltage) / voltage
+
+def resistance_to_force_max_sensitive(resistance):
+    if resistance >= 15000:
+        return 0
+    elif resistance >= 14000:
+        return 100 * (15000 - resistance) / 1000
+    elif resistance >= 12000:
+        return 200 + 300 * (14000 - resistance) / 2000
+    elif resistance >= 8000:
+        return 500 + 1000 * (12000 - resistance) / 4000
+    elif resistance >= 4000:  
+        return 1500 + 2500 * (8000 - resistance) / 4000
+    else:
+        return 4000 + 4000 * max(0, (4000 - resistance)) / 4000
+
+zero_offset = 0
+scale_factor = 30.0
+
+# --- DHT11 functie ---
+def read_dht11():
+    data = []
+
+    GPIO.setup(DATA_PIN, GPIO.OUT)
+    GPIO.output(DATA_PIN, GPIO.HIGH)
+    time.sleep(0.05)  
+
+    GPIO.output(DATA_PIN, GPIO.LOW)
+    time.sleep(0.02)  
+
+    GPIO.output(DATA_PIN, GPIO.HIGH)
+    time.sleep(0.00004)  
+
+    GPIO.setup(DATA_PIN, GPIO.IN)
+
+    count = 0
+    while GPIO.input(DATA_PIN) == GPIO.HIGH:
+        count += 1
+        if count > 100000:
+            print("Timeout: sensor reageert niet (blijft HIGH)")
+            return None, None
+
+    while GPIO.input(DATA_PIN) == GPIO.LOW:
+        count += 1
+        if count > 100000:
+            print("Timeout: sensor blijft LOW")
+            return None, None
+
+    for i in range(40):
+        while GPIO.input(DATA_PIN) == GPIO.LOW:
+            pass
+
+        start = time.time()
+        while GPIO.input(DATA_PIN) == GPIO.HIGH:
+            pass
+
+        duration = time.time() - start
+
+        bit = 1 if duration > 0.00005 else 0
+        data.append(bit)
+
+    bytes_ = []
+    for i in range(0, 40, 8):
+        byte = 0
+        for j in range(8):
+            byte = (byte << 1) | data[i + j]
+        bytes_.append(byte)
+
+    humidity = bytes_[0]
+    temperature = bytes_[2]
+    checksum = bytes_[4]
+    if (bytes_[0] + bytes_[1] + bytes_[2] + bytes_[3]) & 0xFF == checksum:
+        return temperature, humidity
+    else:
+        print("Checksum mismatch – ongeldige data.")
+        return None, None
+
+# Initialiseer LCD
+print("LCD initialiseren...")
+lcd_init()
+print("LCD geïnitialiseerd!")
+
+# LCD rotatie variabelen
+lcd_display_index = 0
+lcd_update_counter = 0
+LCD_UPDATE_INTERVAL = 10  # Update LCD elke 10 cycli (ongeveer 3 seconden)
+
+# Data opslag voor LCD
+current_ip = get_ip_address()
+current_temp = None
+current_humidity = None
+current_weight = 0
+current_distance = 0
+
+print("Start programma: Ultrasonic afstand, Gewichtssensor & Temperatuur")
+print("Druk Ctrl+C om te stoppen\n")
+
+try:
+    while True:
+        if stop_programma:
+            break
+        
+        # Ultrasonic sensor uitlezen
+        afstand = meet_afstand()
+        if afstand is not None and 2 <= afstand <= 400:
+            current_distance = afstand
+            print(f"Afstand: {afstand:.1f} cm")
+            if afstand <= 5:
+                print("Beweging gedetecteerd binnen 5 cm - pauzeer en wacht op knop.")
+                knop_gedrukt = wacht_op_knop(timeout=5)
+                if knop_gedrukt:
+                    print("Knop werd ingedrukt, ga verder...")
+                else:
+                    print("Geen knop ingedrukt, ga verder met normale werking...")
+        else:
+            print("Meting ongeldig of buiten bereik")
+
+        # Gewichtssensor uitlezen
+        adc_value = read_average(0, samples=60)
+        voltage = adc_to_voltage(adc_value)
+        resistance = voltage_to_resistance(voltage)
+
+        weight = resistance_to_force_max_sensitive(resistance)
+        weight = max(0, (weight - zero_offset) * scale_factor)
+        current_weight = int(weight)
+
+        print(f"Gewicht: {current_weight} g")
+
+        # Temperatuur en luchtvochtigheid uitlezen
+        temperatuur, luchtvochtigheid = read_dht11()
+        if temperatuur is not None and luchtvochtigheid is not None:
+            current_temp = temperatuur
+            current_humidity = luchtvochtigheid
+            print(f"Luchtvochtigheid: {luchtvochtigheid} % | Temperatuur: {temperatuur} °C")
+        else:
+            print("Kon temperatuur en luchtvochtigheid niet uitlezen")
+
+        # LCD update logica
+        lcd_update_counter += 1
+        if lcd_update_counter >= LCD_UPDATE_INTERVAL:
+            lcd_update_counter = 0
+            
+            if lcd_display_index == 0:
+                # Toon IP adres
+                lcd_display_two_lines("IP Adres:", current_ip)
+                lcd_display_index = 1
+                
+            elif lcd_display_index == 1:
+                # Toon temperatuur en luchtvochtigheid
+                if current_temp is not None and current_humidity is not None:
+                    line2 = f"Vocht: {current_humidity}%"
+                    line1 = f"Temp: {current_temp}C"
+                    lcd_display_two_lines(line1, line2)
+                else:
+                    lcd_display_two_lines("Vocht: --%", "Temp: --%")
+                lcd_display_index = 2
+                
+                lcd_display_index = 0  # Terug naar begin
+
+        print("")  # lege regel voor overzichtelijkheid
+
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    print("\nGestopt door gebruiker.")
+finally:
+    lcd_clear()
+    cleanup_gpio()
+    print("Programma beëindigd.")

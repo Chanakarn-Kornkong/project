@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="website.css" />
+</head>
+
+    <body>
+        <div class="register_inhoud">
+            <div class="register-container">
+                <h1>Login</h1>
+        
+                <label for="username">Gebruikersnaam</label>
+                <input type="text" id="username" name="username" placeholder="Typ je gebruikersnaam" />
+        
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" placeholder="Typ je e-mail" />
+        
+                <label for="password">Wachtwoord</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Typ je wachtwoord" />
+                    <button type="button" class="eye-button" aria-label="Toon wachtwoord" onclick="togglePassword()">
+                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="#333">
+                            <path
+                                d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8.3a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6z" />
+                        </svg>
+                    </button>
+                </div>
+        
+        
+        <div class="two-login-button">
+                <a href="dashboard.html" class="login-btn">Go!</a>
+                <a href="register.html" class="register-btn">Registreer</a></div>
+
+<script src="script.js"></script>
+</body>
+</html>
