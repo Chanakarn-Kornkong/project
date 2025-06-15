@@ -170,3 +170,9 @@ Feedback:
 
 - Feedback: De MCP3008 is met 5V ingeschakeld inplaats van met 3.3V en de kabels van de PCF8574 waren wel geconnecteerd met de component maar het had nog geen functie.
 - Opgelost door de MCP3008 met 3.3 te schakelen en de PCF8574 in de breadbord te steken.
+
+- ## Gesprek 10 (Datum: 11/06/2025) 
+Lectoren: Pieter Jan
+Feedback:
+- Vraag 1: Ik kan niet in mijn server omdat ik geen toegang erop had.
+- Opgelost door de code te veranderen door mijn mappen met bestanden toe te voegen.
