@@ -176,3 +176,16 @@ Lectoren: Pieter Jan
 Feedback:
 - Vraag 1: Ik kan niet in mijn server omdat ik geen toegang erop had.
 - Opgelost door de code te veranderen door mijn mappen met bestanden toe te voegen.
+
+- ## Gesprek 11 (Datum: 17/06/2025) 
+-- ##MVP 3 ----
+Lectoren: Geert en Christophe
+Feedback: 
+- Feedback 1: Verwarring met de UX (inloggen met email overbodig)
+- Feedback 2: Verwoording van de ‘reeks’ misschien beter
+- Feedback 3: Hoofdletters voor website consequent zijn
+- Feedback 4: Alles samen laten werken
+- Feedback 5: branches naamgeving!
+- Feedback 6: historiek: maken dat je kan terug kijken
+  Tip: 
+- Tip: pomp: als je niet oplet dat het water kan blijven lopen wet communicerende vaten
